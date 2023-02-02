@@ -1,290 +1,208 @@
-/* const bcrypt = require("bcryptjs");
-const token = require('basic-auth-token');
+const bcrypt = require("bcryptjs");
 const { ReasonPhrases, StatusCodes } = require("http-status-codes");
-const {TwitterApi} = require('twitter-api-v2');
-const speakeasy = require("speakeasy");
+const User = require("../models/user.model");
+const jwt = require("jsonwebtoken");
 
-
-const T = new TwitterApi({
-    appKey:"W0SfhdIFlIEjBAiEuVlNOShIG",
-    appSecret:"7mxEw05rtuTQ1GVEqhChsf400mX5WwJm6QYrxXrEyv9Uy4xV4K",
-    accessToken:"1589277394107514880-SvQJ9k47tDXGWoYn1fk29l5nDrDz98",
-    accessSecret:"z4AIuz8C63BLHUqwvBwvh3u1Lr5JnPjommUzSsjH8opLf",
-  });
-
-const getUsers = (request, response) => {
-    pool.query('SELECT * FROM usuarios ORDER BY id ASC', (error, results) => {
-        if (error) {
-            throw error
-        }
-        response.status(200).json(results.rows)
-    })
-}
-
-const getUser = (request, response) => {
-    const id = parseInt(request.params.id);
-
-    pool.query('SELECT * FROM usuarios WHERE id = $1', [id], (error, results) => {
-        if (error) {
-            throw error
-        }
-        response.status(StatusCodes.OK).json({
-            message: ReasonPhrases.OK,
-            data: results.rows[0]
-        });
-    })
-}
-
-const crearTweet = (request, response) => {
-    let {texto,usuario,fecha_publicacion,tipo} = request.body;
-    T.v2.tweet(texto).then((val) => {
-        insertarTweetBD(usuario,fecha_publicacion,tipo);
-        return response.status(StatusCodes.OK).json({
-            message: ReasonPhrases.OK,
-            data: (val)
-        });
-    }).catch((err) => {
-        return response.status(StatusCodes.BAD_REQUEST).json({
-            message: ReasonPhrases.BAD_REQUEST,
-            data: err
-        });
-    })
-}
-const login = async (request, response) => {
-
-    let { email, password } = request.body;
-
-    // Validar inputs
-    if (!(email && password)) {
-        return response.status(StatusCodes.BAD_REQUEST).json({
-            message: ReasonPhrases.BAD_REQUEST,
-            data: "Falta correo o contraseña"
-        });
+const signUp = async (req, res, next) => {
+    let { name, first_last_name, second_last_name, email, password, gender, birthday } = req.body;
+  
+    let existingUser;
+  
+    try {
+      existingUser = await User.findOne({ email: email });
+    } catch (err) {
+      return next(new HttpError(err, 500));
     }
-
-    //Validar existencia de usuario
-    pool.query('SELECT * FROM usuarios WHERE email = $1', [email], async (error, results) => {
-        if (error) {
-            throw error
-        }
-        if (results.rows.length<1) {
-            return response.status(StatusCodes.NOT_FOUND).json({
-                message: ReasonPhrases.NOT_FOUND,
-                data: "Usuario no existe en la base de datos"
-            });
-        }
-        // Comparar contraseña
-        if (await bcrypt.compare(password, results.rows[0].password)) {
-            auth = token(results.rows[0].id,results.rows[0].password);
-            user = {"data":results.rows[0], "token":auth};
-            return response.status(StatusCodes.OK).json({
-                message: ReasonPhrases.OK,
-                data: (user)
-            });
-        } else {
-            return response.status(StatusCodes.UNAUTHORIZED).json({
-                message: ReasonPhrases.UNAUTHORIZED,
-                data: "Usuario o contraseña incorrecto"
-            });
-        }
-    })
-}
-
-const createUser = async (request, response) => {
-    let { firstName, lastName, email, password } = request.body
-
+  
+    if (existingUser) {
+      return next(new HttpError("User Exists Already", 422));
+    }
     password = await bcrypt.hash(password, 10);
-
-    pool.query('INSERT INTO usuarios (nombre,apellido, email,password) VALUES ($1, $2, $3,$4)', [firstName, lastName, email, password], (error, results) => {
-        if (error) {
-            throw error
-        }
-        response.status(StatusCodes.CREATED).json({
-            message: ReasonPhrases.CREATED,
-            data: "User created:" + email,
-        });
-    })
-}
-
-const updateUser = (request, response) => {
-    const id = parseInt(request.params.id)
-    const { nombre, apellido, email } = request.body
-    console.log(nombre);
-    console.log(apellido);
-    console.log(email);
-
-    pool.query(
-        'UPDATE usuarios SET nombre = $1, apellido = $2, email = $3 WHERE id = $4',
-        [nombre, apellido, email, id],
-        (error, results) => {
-            if (error) {
-                throw error
-            }
-            response.status(StatusCodes.OK).json({
-                message: ReasonPhrases.OK,
-                data: "User updated:" + email,
-            });
-        }
-    )
-}
-
-const deleteUser = (request, response) => {
-    const id = parseInt(request.params.id)
-
-    pool.query('DELETE FROM usuarios WHERE id = $1', [id], (error, results) => {
-        if (error) {
-            throw error
-        }
-        response.status(200).send(`User deleted with ID: ${id}`)
-    })
-}
-
-const insertarTweetBD = async (usuario, fecha_publicacion, tipo) => {
-    if(!fecha_publicacion) {
-        fecha_publicacion = Date.now()/1000;
-    }
-    pool.query('INSERT INTO posts (usuario_id,plataforma,fecha_publicacion,tipo) VALUES ($1, $2, to_timestamp($3), $4)', [usuario,'Twitter',fecha_publicacion,tipo], (error, results) => {
-        if (error) {
-            throw error
-        }
-        return results;
-    })
-}
-
-const generarOTP = async (request, response) => {
-    const id = parseInt(request.params.id);
-    const { ascii, hex, base32, otpauth_url } = speakeasy.generateSecret({
-        issuer: "SocialHubManager",
-        name: "SocialHubManager",
-        length: 15
+  
+    const createdUser = new User({
+      name, first_last_name, second_last_name, email, password, gender, birthday
     });
-
-    pool.query(
-        'UPDATE usuarios SET otp_ascii = $1, otp_hex = $2, otp_base32 = $3, otp_auth_url = $4 WHERE id = $5',
-        [ascii, hex, base32, otpauth_url, id],
-        (error, results) => {
-            if (error) {
-                throw error
-            }
-            response
-                .status(StatusCodes.OK)
-                .json({
-                    message: ReasonPhrases.OK,
-                    base32, 
-                    otpauth_url
-                });
-        }
-    )
-}
-
-const verificarOTP = async (request, response) => {
-    const id = parseInt(request.params.id);
-    const { token } = request.body;
-
-    const { rows } = await pool.query('SELECT * FROM usuarios WHERE id = $1', [id]);
-
-    if (!rows[0]) {
-        return response.status(StatusCodes.UNAUTHORIZED).json({
-            message: ReasonPhrases.UNAUTHORIZED,
-            data: "Token o usuario no existe"
-        });
+    try {
+      createdUser.save();
+    } catch (error) {
+      return next(new HttpError("Signing up failed, please try again", 500));
     }
-
-    const verificado = speakeasy.totp.verify({
-        secret: rows[0].otp_base32,
-        encoding: "base32",
-        token
+    res.status(StatusCodes.CREATED).json({
+      message: ReasonPhrases.CREATED,
+      data: createdUser.toObject({ getters: true }),
     });
-
-    if (!verificado) {
-        return response.status(StatusCodes.UNAUTHORIZED).json({
-            message: ReasonPhrases.UNAUTHORIZED,
-            data: "Token o usuario no existe"
+  };
+  
+  const login = async (req, res, next) => {
+    try {
+      // Get user input
+      const { email, password } = req.body;
+      // Validate user input
+      if (!(email && password)) {
+        return res.status(StatusCodes.BAD_REQUEST).json({
+          message: ReasonPhrases.BAD_REQUEST,
+          data: "Missing username or password"
         });
+      }
+      // Validate if user exist in our database
+      const user = await User.findOne({ email });
+      if (!user) {
+        return res.status(StatusCodes.NOT_FOUND).json({
+          message: ReasonPhrases.NOT_FOUND,
+          data: "User does not exist in database"
+        });
+      }
+  
+      if (user && (await bcrypt.compare(password, user.password))) {
+        // Create token
+        const token = jwt.sign(
+          { user },
+          "my_secret_key",
+          {
+            expiresIn: "2h",
+          }
+        );
+  
+        res.cookie('token', token, { httpOnly: true });
+  
+        // user
+        return res.status(StatusCodes.OK).json({
+          message: ReasonPhrases.OK,
+          data: { token: token, expiresIn: "2 hours" }
+        });
+      }
+      return res.status(StatusCodes.UNAUTHORIZED).json({
+        message: ReasonPhrases.UNAUTHORIZED,
+        data: "Wrong username or password"
+      });
+    } catch (err) {
+      console.log(err);
     }
+  };
+  const getUsers = async (req, res, next) => {
+    try {
 
-    pool.query(
-        'UPDATE usuarios SET otp_habilitado = true, otp_verificado = true WHERE id = $1',
-        [id],
-        (error, results) => {
-            if (error) {
-                throw error
-            }
-            response
-                .status(StatusCodes.OK)
-                .json({
-                    message: ReasonPhrases.OK,
-                    data: `OTP verified for user with ID: ${id}`
-                });
+      const { email } = req.body;
+
+      // Validate if user exist in our database
+      const users = await User.find().sort({ date: -1 });
+      if (!users) {
+        return res.status(StatusCodes.NOT_FOUND).json({
+          message: ReasonPhrases.NOT_FOUND,
+          data: "No users in DB"
+        });
+      }
+  
+      if (users) {
+
+        // user
+        return res.status(StatusCodes.OK).json({
+          message: ReasonPhrases.OK,
+          data: {users}
+        });
+      }
+    } catch (err) {
+      console.log(err);
+    }
+  };
+  const updateUser = async (req, res, next) => {
+  
+    const userId = req.user.user._id;
+  
+    let { name, first_last_name, second_last_name, email, birthday, gender, password } = req.body;
+    let user;
+    let token;
+    password = await bcrypt.hash(password, 10);
+    try {
+      user = await User.findByIdAndUpdate(
+        userId,
+        { name, first_last_name, second_last_name, email, birthday, gender, password },
+        {
+          new: true,
         }
-    )
-}
-
-const validarOTP = async (request, response) => {
-    const id = parseInt(request.params.id);
-    const { token } = request.body;
-
-    const { rows } = await pool.query('SELECT * FROM usuarios WHERE id = $1', [id]);
-
-    if (!rows[0]) {
-        return response.status(StatusCodes.UNAUTHORIZED).json({
-            message: ReasonPhrases.UNAUTHORIZED,
-            data: "Token o usuario no existe"
-        });
+      ).exec();
+      token = jwt.sign(
+        { user },
+        "my_secret_key",
+        {
+          expiresIn: "2h",
+        }
+      );
+      res.cookie('token', token, { httpOnly: true });
+  
+    } catch (err) {
+      return next(new HttpError(err, 400));
     }
+    if (user) {
+      res.status(StatusCodes.OK).json({
+        message: ReasonPhrases.OK,
+        data: { user: user.toObject({ getters: true }), token: token }
+      });
+    } else {
+      res.status(StatusCodes.NOT_FOUND).json({
+        message: ReasonPhrases.NOT_FOUND,
+      });
+    }
+  };
+  
+  const deleteUser = async (req, res, next) => {
+    const userId = req.user.user._id;
+    let user;
+    try {
+      user = await User.findById(userId).exec();
+    } catch (err) {
+      return next(new HttpError("not found", 400));
+    }
+    if (user) {
+      await user.remove();
+      res.status(StatusCodes.OK).json({
+        message: ReasonPhrases.OK,
+        data: "Deleted!!",
+      });
+    } else {
+      res.status(StatusCodes.NOT_FOUND).json({
+        message: ReasonPhrases.NOT_FOUND,
+      });
+    }
+  };
+  
 
-    const tokenValidado = speakeasy.totp.verify({
-        secret: rows[0].otp_base32,
-        encoding: "base32",
-        token,
-        window: 1
+ /*  const resetPassword = async (req, res, next) => {
+    let user;
+  
+    let password = generator.generate({
+      length: 10,
+      numbers: true
     });
-
-    if (!tokenValidado) {
-        return response.status(StatusCodes.UNAUTHORIZED).json({
-            message: ReasonPhrases.UNAUTHORIZED,
-            data: "Token invalido o usuario no existe"
-        });
+  
+    try {
+      user = await User.findOne({ email: req.body.email });
+    } catch (err) {
+      return next(new HttpError("not found", 400));
     }
-
-    response
-        .status(StatusCodes.OK)
-        .json({
-            message: ReasonPhrases.OK,
-            data: `OTP validated for user with ID: ${id}`
-        });
-}
-
-const desactivarOTP = async (request, response) => {
-    const id = parseInt(request.params.id);
-
-    pool.query(
-        'UPDATE usuarios SET otp_habilitado = false WHERE id = $1',
-        [id],
-        (error, results) => {
-            if (error) {
-                throw error
-            }
-            response
-                .status(StatusCodes.OK)
-                .json({
-                    message: ReasonPhrases.OK,
-                    data: `OTP disabled for user with ID: ${id}`
-                });
-        }
-    )
-}
+  
+    if (user) {
+      await emailSender.sendEmail(user.email, password);
+      password = await bcrypt.hash(password, 10);
+      user.password = password;
+      user.save();
+      res.status(StatusCodes.OK).json({
+        message: ReasonPhrases.OK,
+        data: "Email sent to: " + user.email,
+      });
+    } else {
+      res.status(StatusCodes.NOT_FOUND).json({
+        message: ReasonPhrases.NOT_FOUND,
+        data: "User not found"
+      });
+    }
+  }; */
 
 module.exports = {
-    crearTweet,
-    getUsers,
-    getUser,
+    signUp,
     login,
-    createUser,
     updateUser,
     deleteUser,
-    generarOTP,
-    verificarOTP,
-    validarOTP,
-    desactivarOTP
-} */
+    // resetPassword,
+    getUsers
+}
