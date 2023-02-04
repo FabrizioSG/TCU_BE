@@ -15,7 +15,9 @@ const signUp = async (req, res, next) => {
     }
   
     if (existingUser) {
-      return next(new HttpError("User Exists Already", 422));
+      res.status(StatusCodes.CONFLICT).json({
+        message: 'El correo ingresado ha sido registrado previamente.',
+      });
     }
     password = await bcrypt.hash(password, 10);
   
