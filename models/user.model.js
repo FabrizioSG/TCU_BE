@@ -7,6 +7,7 @@ const userSchema = new mongoose.Schema({
   first_last_name: { type: String, required: true },
   second_last_name: { type: String},
   cedula: { type: String},
+  rol: { type: String},
   estado_civil: { type: String},
   nacionalidad: { type: String},
   condicion_laboral: { type: String},
