@@ -109,16 +109,19 @@ const signUp = async (req, res, next) => {
   };
   const updateUser = async (req, res, next) => {
   
-    const userId = req.user.user._id;
-  
-    let { name, first_last_name, second_last_name, email, birthday, gender, password } = req.body;
+    const userId = req.params.id;
+
+    let { name, first_last_name, second_last_name, cedula, email, birthday,  gender, 
+      rol, estado_civil, nacionalidad, condicion_laboral, grado_academico, familia, patrimonio, 
+      casilla_feliz, objetivos, plan_deuda, salud} = req.body;
     let user;
     let token;
-    password = await bcrypt.hash(password, 10);
     try {
       user = await User.findByIdAndUpdate(
         userId,
-        { name, first_last_name, second_last_name, email, birthday, gender, password },
+        { name, first_last_name, second_last_name, email, birthday, cedula, gender, 
+          rol, estado_civil, nacionalidad, condicion_laboral, grado_academico, familia, patrimonio,
+          casilla_feliz, objetivos, plan_deuda, salud},
         {
           new: true,
         }
@@ -133,7 +136,9 @@ const signUp = async (req, res, next) => {
       res.cookie('token', token, { httpOnly: true });
   
     } catch (err) {
-      return next(new HttpError(err, 400));
+      res.status(StatusCodes.NOT_FOUND).json({
+        message: err,
+      });
     }
     if (user) {
       res.status(StatusCodes.OK).json({
