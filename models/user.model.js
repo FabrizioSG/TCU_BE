@@ -34,29 +34,7 @@ const userSchema = new mongoose.Schema({
     mediano: String,
     largo: String,
     diagnostico: String,
-  }],
-  casilla_feliz: [{
-    salario_neto: String,
-    otros_ingresos: String,
-    ahorros: String,
-    deudas: [{nombre: String,monto: String}],
-    recurrentes: [{nombre: String,monto: String, mes: String}],
-  }],
-  plan_deuda: [{
-    emisor: String,
-    saldo_actual: String,
-    tasa_actual: String,
-    plazo_actual: String,
-    descripcion: String,
-    ponderado_tasa: String,
-    ponderado_plazo: String
-  }],
-  patrimonio: [{
-    activos: [{nombre: String,monto: String, mes: String}],
-    activo_circulante: [{nombre: String,monto: String, mes: String}],
-    pasivos_corto_plazo: [{nombre: String,monto: String, mes: String}],
-    pasivos_largo_plazo: [{nombre: String,monto: String, mes: String}],
-  }],
+  }]
 },
   { timestamps: true }
 
