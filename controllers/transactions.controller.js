@@ -2,16 +2,15 @@ const { ReasonPhrases, StatusCodes } = require("http-status-codes");
 const Transaction = require("../models/transactions.model");
 
 const createTransaction = async (req, res, next) => {
-    let { user, description, tab, amount, category } = req.body;
-    if (!description){
+    let { user, description, tab, amount, category, month } = req.body;
+    if (category === "Salario Neto" ){
       description = "Salario Neto"
     }
-    console.log(category);
     if(category === "Salario Neto" || category === "Otros ingresos"){
         category = "Ingresos Netos"
     }
     const createdTransaction = new Transaction({
-      user, description, tab, amount, category
+      user, description, tab, amount, category, month
     });
     try {
       createdTransaction.save();
@@ -30,7 +29,6 @@ const createTransaction = async (req, res, next) => {
 
       const userId = req.params.id;
 
-      
       const transactions = await Transaction.find({ user: userId });
       if (!transactions) {
         return res.status(StatusCodes.NOT_FOUND).json({

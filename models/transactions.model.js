@@ -20,6 +20,7 @@ const transactionSchema = new mongoose.Schema({
     type: String,
     required: true
   },
+  month: { type: String}
 },
   { timestamps: true }
 
