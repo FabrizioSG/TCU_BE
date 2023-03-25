@@ -4,7 +4,7 @@ const User = require("../models/user.model");
 const jwt = require("jsonwebtoken");
 
 const signUp = async (req, res, next) => {
-    let { name, first_last_name, second_last_name, email, password, gender, birthday } = req.body;
+    let { name, first_last_name, second_last_name, email, password, gender, birthday, rol } = req.body;
   
     let existingUser;
   
@@ -22,7 +22,7 @@ const signUp = async (req, res, next) => {
     password = await bcrypt.hash(password, 10);
   
     const createdUser = new User({
-      name, first_last_name, second_last_name, email, password, gender, birthday
+      name, first_last_name, second_last_name, email, password, gender, birthday, rol
     });
     try {
       createdUser.save();

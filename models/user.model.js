@@ -16,6 +16,7 @@ const userSchema = new mongoose.Schema({
   password: { type: String, minlength: 6 },
   birthday: { type: Date, },
   gender: { type: String, },
+  rol: { type: String, },
   familia: [{
     cantidad: String,
     ingreso_bruto: String,

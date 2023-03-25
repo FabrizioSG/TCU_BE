@@ -1,6 +1,6 @@
 Links de interes -> Razones
 Borrar transacciones -> Everywhere
-Rol de administrador -> Perfil 
+Pantalla de administrador -> Perfil 
 Recuperar contrasena
 
 <<<>>> Pantalla patrimonio <<<>>>
