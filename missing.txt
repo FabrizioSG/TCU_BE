@@ -1,6 +1,13 @@
-Links de interes -> Razones
+Links de interes -> Razones 
+¿Cuales links de interes?
+- Instagram de TCU
+- Check actividades hacienda https://api.hacienda.go.cr/fe/ae?identificacion=207460510 / https://api.hacienda.go.cr/fe/ae?identificacion=3101009758
+-
+-
+
 Borrar transacciones -> Everywhere
 Pantalla de administrador -> Perfil 
 Recuperar contrasena
 
-<<<>>> Pantalla patrimonio <<<>>>
+terminar patrimonio*
+saldo inicial presupuesto*
