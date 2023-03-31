@@ -12,6 +12,8 @@ router.post('/login', userController.login)
 router.put('/:id', userController.updateUser)
 router.delete('/:id', userController.deleteUser)
 
+router.post("/resetPassword", userController.resetPassword);
+
 router.get('/transactions/:id', transactionController.getTransactionsFromUser);
 router.post('/transactions', transactionController.createTransaction);
 
