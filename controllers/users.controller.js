@@ -2,6 +2,8 @@ const bcrypt = require("bcryptjs");
 const { ReasonPhrases, StatusCodes } = require("http-status-codes");
 const User = require("../models/user.model");
 const jwt = require("jsonwebtoken");
+const generator = require('generate-password');
+const emailSender = require("../controllers/emailSender")
 
 const signUp = async (req, res, next) => {
     let { name, first_last_name, second_last_name, email, password, gender, birthday, rol } = req.body;
@@ -113,15 +115,19 @@ const signUp = async (req, res, next) => {
 
     let { name, first_last_name, second_last_name, cedula, email, birthday,  gender, 
       rol, estado_civil, nacionalidad, condicion_laboral, grado_academico, familia, patrimonio, 
-      casilla_feliz, objetivos, plan_deuda, salud} = req.body;
+      casilla_feliz, objetivos, plan_deuda, salud, password} = req.body;
     let user;
     let token;
+    if(password){
+      password = await bcrypt.hash(password, 10);
+    }
+    
     try {
       user = await User.findByIdAndUpdate(
         userId,
         { name, first_last_name, second_last_name, email, birthday, cedula, gender, 
           rol, estado_civil, nacionalidad, condicion_laboral, grado_academico, familia, patrimonio,
-          casilla_feliz, objetivos, plan_deuda, salud},
+          casilla_feliz, objetivos, plan_deuda, salud, password},
         {
           new: true,
         }
@@ -174,9 +180,8 @@ const signUp = async (req, res, next) => {
   };
   
 
- /*  const resetPassword = async (req, res, next) => {
+  const resetPassword = async (req, res, next) => {
     let user;
-  
     let password = generator.generate({
       length: 10,
       numbers: true
@@ -203,13 +208,13 @@ const signUp = async (req, res, next) => {
         data: "User not found"
       });
     }
-  }; */
+  };
 
 module.exports = {
     signUp,
     login,
     updateUser,
     deleteUser,
-    // resetPassword,
+    resetPassword,
     getUsers
 }
