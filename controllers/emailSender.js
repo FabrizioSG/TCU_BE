@@ -19,7 +19,7 @@ async function sendEmail(user, password) {
     } catch (error) {
         return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
             message: ReasonPhrases.INTERNAL_SERVER_ERROR,
-            data: error
+            data: error,
           });
     }
   }
